@@ -1,7 +1,11 @@
 from bleak import BleakClient, BleakError
 
+from dataclasses import dataclass
+
+
 import struct
 
+@dataclass
 class PaxSensors:
     fan_speed: int
     humidity: int
