@@ -1,0 +1,17 @@
+{
+    "domain": "pax_levante",
+    "name": "Pax Levante",
+    "codeowners": [],
+    "dependencies": ["bluetooth_adapters"],
+    "documentation": "",
+    "iot_class": "local_polling",
+    "requirements": [],
+    "config_flow": true,
+    "version": "0.1.0",
+    "bluetooth": [
+    {
+        "local_name": "Pax Levante",
+        "connectable": true
+    }
+    ]
+}
