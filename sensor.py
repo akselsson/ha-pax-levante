@@ -7,10 +7,26 @@ from homeassistant.core import HomeAssistant
 from homeassistant.core import callback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import (
+    DataUpdateCoordinator,
+    UpdateFailed,
+    CoordinatorEntity,
+)
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import StateType
+
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+    SensorStateClass,
+)
+
+# import SensorEntityDescription
+from homeassistant.const import REVOLUTIONS_PER_MINUTE
 
 from homeassistant.components.fan import FanEntity
+from homeassistant.components.sensor import SensorEntity
 
 
 from .pax_client import PaxClient, PaxSensors
@@ -22,6 +38,14 @@ from datetime import timedelta
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+
+FAN_SPEED = SensorEntityDescription(
+    key="current_fan_speed",
+    translation_key="current_fan_speed",
+    native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+    state_class=SensorStateClass.MEASUREMENT,
+)
 
 
 async def async_setup_entry(
@@ -40,7 +64,7 @@ async def async_setup_entry(
 
     hass.states.async_set("pax_levante.integration", "sensor entry")
 
-    async_add_entities([PaxFanEntity(coordinator)])
+    async_add_entities([PaxFanEntity(coordinator, FAN_SPEED)])
 
     return True
 
@@ -68,13 +92,19 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.info("sensors: %s, fan_speed: %s", data, data.fan_speed)
                 return data
         except Exception as err:
-            _LOGGER.info("Updated Error: %s", err)
+            _LOGGER.info("Update Error: %s", err)
             raise UpdateFailed(f"Unable to fetch data: {err}") from err
 
 
-class PaxFanEntity(FanEntity):
-    def __init__(self, coordinator):
-        self.coordinator = coordinator
+class PaxFanEntity(CoordinatorEntity, SensorEntity):
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        entity_description: SensorEntityDescription,
+    ):
+        super().__init__(coordinator)
+        self.entity_description = entity_description
+        self._attr_unique_id = f"{coordinator.address}_{entity_description.key}"
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -82,5 +112,20 @@ class PaxFanEntity(FanEntity):
         _LOGGER.info(
             "In coordinator update. Coordinator data: %s", self.coordinator.data
         )
+        super()._handle_coordinator_update()
         # self._attr_is_on = self.coordinator.data[self.idx]["state"]
         # self.async_write_ha_state()
+
+    @property
+    def available(self) -> bool:
+        """Check if device and sensor is available in data."""
+        return (
+            super().available
+            and self.coordinator.data is not None
+            and self.coordinator.data.fan_speed is not None
+        )
+
+    @property
+    def native_value(self) -> StateType:
+        """Return the value reported by the sensor."""
+        return self.coordinator.data.fan_speed
