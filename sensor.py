@@ -17,7 +17,9 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.device_registry import (
     CONNECTION_BLUETOOTH,
     DeviceInfo,
+    format_mac,
 )
+
 
 from dataclasses import asdict
 
@@ -123,8 +125,6 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self):
         try:
-            # Note: asyncio.TimeoutError and aiohttp.ClientError are already
-            # handled by the data update coordinator.
             async with async_timeout.timeout(10):
                 _LOGGER.debug("Updating data for %s", self.address)
                 ble_device = bluetooth.async_ble_device_from_address(
@@ -146,21 +146,20 @@ class PaxSensorEntity(CoordinatorEntity, SensorEntity):
         entity_description: SensorEntityDescription,
     ):
         super().__init__(coordinator)
+
         self.entity_description = entity_description
-        self._attr_unique_id = f"{coordinator.address}_{entity_description.key}"
-        _LOGGER.debug(
-            "Creating entity: %s %s", self._attr_unique_id, self.entity_description
+        self._attr_unique_id = (
+            f"{format_mac(coordinator.address)}_{entity_description.key}"
         )
+
         self._attr_has_entity_name = True
         self._attr_device_info = DeviceInfo(
             connections={(CONNECTION_BLUETOOTH, coordinator.address)},
             manufacturer=device_info.manufacturer,
-            model=device_info.model,
+            model=f"{device_info.name} {device_info.model_number}",
             name=device_info.name,
             sw_version=device_info.sw_version,
             hw_version=device_info.hw_version,
-            serial_number=device_info.serial_number,
-            suggested_area="Bathroom",
         )
 
     @property

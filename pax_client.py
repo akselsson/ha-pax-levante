@@ -14,9 +14,8 @@ class CurrentTrigger(Enum):
 @dataclass
 class PaxDevice:
     manufacturer: str | None
-    model: str | None
+    model_number: str | None
     name: str | None
-    serial_number: str | None
     sw_version: str | None
     hw_version: str | None
 
@@ -53,13 +52,12 @@ class PaxClient:
                 manufacturer_name,
                 model_number,
                 name,
-                serial_number,
                 software_revision,
                 hardware_revision,
             )
 
     async def _read_string(self, client, handle):
-        return (await client.read_gatt_char(handle)).decode("utf-8")
+        return (await client.read_gatt_char(handle)).decode("utf-8").split("\x00")[0]
 
     async def async_get_sensors(self):
         async with BleakClient(self._device) as client:
