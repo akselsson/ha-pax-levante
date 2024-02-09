@@ -1,0 +1,18 @@
+{
+    "entity": {
+        "sensor": {
+            "fan_speed": {
+                "name": "fan speed"
+            },
+            "temperature": {
+                "name": "temperature"
+            },
+            "humidity": {
+                "name": "humidity"
+            },
+            "light": {
+                "name": "light"
+            }
+        }
+    }
+}

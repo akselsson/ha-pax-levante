@@ -24,14 +24,12 @@ class PaxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_bluetooth(self, discovery_info: BluetoothServiceInfo):
         """Handle the bluetooth discovery step."""
         _LOGGER.debug(
-            "Discovered BT device: %s, %s, %s, %s",
+            "Discovered Pax Fan Bluetooth device: %s, %s, %s, %s",
             discovery_info,
             discovery_info.name,
             discovery_info.address,
             discovery_info.service_uuids,
         )
-
-        self.context["title_placeholders"] = {"name": discovery_info.name}
 
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()

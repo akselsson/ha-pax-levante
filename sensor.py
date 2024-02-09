@@ -14,6 +14,12 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
+from homeassistant.helpers.device_registry import (
+    CONNECTION_BLUETOOTH,
+    DeviceInfo,
+)
+
+from dataclasses import asdict
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -39,13 +45,32 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-
-FAN_SPEED = SensorEntityDescription(
-    key="current_fan_speed",
-    translation_key="current_fan_speed",
-    native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
-    state_class=SensorStateClass.MEASUREMENT,
-)
+SENSOR_MAPPING: dict[str, SensorEntityDescription] = {
+    "fan_speed": SensorEntityDescription(
+        key="fan_speed",
+        translation_key="fan_speed",
+        native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "humidity": SensorEntityDescription(
+        key="humidity",
+        translation_key="humidity",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "temperature": SensorEntityDescription(
+        key="temperature",
+        translation_key="temperature",
+        native_unit_of_measurement="°C",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "light": SensorEntityDescription(
+        key="light",
+        translation_key="light",
+        native_unit_of_measurement="lux",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+}
 
 
 async def async_setup_entry(
@@ -64,7 +89,8 @@ async def async_setup_entry(
 
     hass.states.async_set("pax_levante.integration", "sensor entry")
 
-    async_add_entities([PaxFanEntity(coordinator, FAN_SPEED)])
+    for key in SENSOR_MAPPING:
+        async_add_entities([PaxSensorEntity(coordinator, SENSOR_MAPPING[key])])
 
     return True
 
@@ -96,7 +122,9 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Unable to fetch data: {err}") from err
 
 
-class PaxFanEntity(CoordinatorEntity, SensorEntity):
+class PaxSensorEntity(CoordinatorEntity, SensorEntity):
+    _attr_has_entity_name = True
+
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
@@ -110,22 +138,21 @@ class PaxFanEntity(CoordinatorEntity, SensorEntity):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
         _LOGGER.info(
-            "In coordinator update. Coordinator data: %s", self.coordinator.data
+            "In coordinator update. Coordinator data: %s %s %s",
+            self.native_value,
+            self.coordinator.data,
+            self.entity_description,
         )
         super()._handle_coordinator_update()
-        # self._attr_is_on = self.coordinator.data[self.idx]["state"]
-        # self.async_write_ha_state()
 
     @property
     def available(self) -> bool:
-        """Check if device and sensor is available in data."""
         return (
             super().available
             and self.coordinator.data is not None
-            and self.coordinator.data.fan_speed is not None
+            and self.entity_description.key in asdict(self.coordinator.data)
         )
 
     @property
     def native_value(self) -> StateType:
-        """Return the value reported by the sensor."""
-        return self.coordinator.data.fan_speed
+        return asdict(self.coordinator.data)[self.entity_description.key]
