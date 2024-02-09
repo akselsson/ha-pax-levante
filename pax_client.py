@@ -12,6 +12,16 @@ class CurrentTrigger(Enum):
 
 
 @dataclass
+class PaxDevice:
+    manufacturer: str | None
+    model: str | None
+    name: str | None
+    serial_number: str | None
+    sw_version: str | None
+    hw_version: str | None
+
+
+@dataclass
 class PaxSensors:
     humidity: int
     temperature: int
@@ -25,8 +35,31 @@ class PaxSensors:
 
 
 class PaxClient:
+    device_info: PaxDevice | None = None
+
     def __init__(self, device):
         self._device = device
+
+    async def async_get_device_info(self):
+        async with BleakClient(self._device) as client:
+            serial_number = await self._read_string(client, 11)
+            model_number = await self._read_string(client, 13)
+            hardware_revision = await self._read_string(client, 15)
+            software_revision = await self._read_string(client, 19)
+            manufacturer_name = await self._read_string(client, 21)
+            name = await self._read_string(client, 28)
+
+            return PaxDevice(
+                manufacturer_name,
+                model_number,
+                name,
+                serial_number,
+                software_revision,
+                hardware_revision,
+            )
+
+    async def _read_string(self, client, handle):
+        return (await client.read_gatt_char(handle)).decode("utf-8")
 
     async def async_get_sensors(self):
         async with BleakClient(self._device) as client:

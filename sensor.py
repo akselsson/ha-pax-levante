@@ -35,7 +35,7 @@ from homeassistant.components.fan import FanEntity
 from homeassistant.components.sensor import SensorEntity
 
 
-from .pax_client import PaxClient, PaxSensors
+from .pax_client import PaxClient, CurrentTrigger
 
 import logging
 import async_timeout
@@ -70,6 +70,18 @@ SENSOR_MAPPING: dict[str, SensorEntityDescription] = {
         native_unit_of_measurement="lux",
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    "current_trigger": SensorEntityDescription(
+        key="current_trigger",
+        translation_key="current_trigger",
+        device_class=SensorDeviceClass.ENUM,
+        options=[CurrentTrigger.BASE, CurrentTrigger.LIGHT, CurrentTrigger.HUMIDITY],
+    ),
+    "boost": SensorEntityDescription(
+        key="boost",
+        translation_key="boost",
+        device_class=SensorDeviceClass.ENUM,
+        options=[True, False],
+    ),
 }
 
 
@@ -87,10 +99,16 @@ async def async_setup_entry(
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    for key in SENSOR_MAPPING:
-        async_add_entities([PaxSensorEntity(coordinator, SENSOR_MAPPING[key])])
+    async with async_timeout.timeout(10):
+        device_info = await PaxClient(
+            bluetooth.async_ble_device_from_address(hass, address)
+        ).async_get_device_info()
 
-    return True
+        async_add_entities(
+            PaxSensorEntity(coordinator, device_info, SENSOR_MAPPING[key])
+            for key in SENSOR_MAPPING
+        )
+        return True
 
 
 class PaxUpdateCoordinator(DataUpdateCoordinator):
@@ -121,16 +139,29 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
 
 
 class PaxSensorEntity(CoordinatorEntity, SensorEntity):
-    _attr_has_entity_name = True
-
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
+        device_info: DeviceInfo,
         entity_description: SensorEntityDescription,
     ):
         super().__init__(coordinator)
         self.entity_description = entity_description
         self._attr_unique_id = f"{coordinator.address}_{entity_description.key}"
+        _LOGGER.debug(
+            "Creating entity: %s %s", self._attr_unique_id, self.entity_description
+        )
+        self._attr_has_entity_name = True
+        self._attr_device_info = DeviceInfo(
+            connections={(CONNECTION_BLUETOOTH, coordinator.address)},
+            manufacturer=device_info.manufacturer,
+            model=device_info.model,
+            name=device_info.name,
+            sw_version=device_info.sw_version,
+            hw_version=device_info.hw_version,
+            serial_number=device_info.serial_number,
+            suggested_area="Bathroom",
+        )
 
     @property
     def available(self) -> bool:

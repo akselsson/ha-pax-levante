@@ -12,6 +12,9 @@
             },
             "light": {
                 "name": "Light"
+            },
+            "current_trigger": {
+                "name": "Current trigger"
             }
         }
     }
