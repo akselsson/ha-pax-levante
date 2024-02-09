@@ -10,6 +10,9 @@ class PaxSensors:
     humidity: int
     temperature: int
     light: int
+    current_trigger: int
+    tbd: int
+    raw: str
 
 
 class PaxClient:
@@ -22,4 +25,12 @@ class PaxClient:
             humidity, temperature, light, fan_speed, current_trigger, tbd = (
                 struct.unpack("HHHHHH", raw_sensors)
             )
-            return PaxSensors(fan_speed, humidity, temperature, light)
+            return PaxSensors(
+                fan_speed,
+                humidity,
+                temperature,
+                light,
+                current_trigger,
+                tbd,
+                raw_sensors.hex(),
+            )

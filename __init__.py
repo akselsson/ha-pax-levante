@@ -22,24 +22,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     address = entry.unique_id
 
-    _LOGGER.info("In setup Entry: %s, Address: %s", entry, address)
+    _LOGGER.debug("In setup Entry: %s, Address: %s", entry, address)
 
     ble_device = bluetooth.async_ble_device_from_address(hass, address)
     if not ble_device:
         raise ConfigEntryNotReady(f"Could not find Pax device with address {address}")
 
-    _LOGGER.info("Device: %s", ble_device)
-
-    hass.states.async_set("pax_levante.integration", "init_entry")
+    _LOGGER.debug("Found device: %s", ble_device)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
-    return True
-
-
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
-    _LOGGER.info("Unloading Entry: %s", entry)
-    hass.states.async_set("pax_levante.integration", "unloaded")
 
     return True
