@@ -9,6 +9,8 @@ class CurrentTrigger(Enum):
     BASE = 1
     LIGHT = 2
     HUMIDITY = 3
+    AUTOMATIC_VENTILATION = 7
+
 
 
 @dataclass
