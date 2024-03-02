@@ -57,12 +57,19 @@ class PaxClient:
             )
 
     async def _read_string(self, client, handle):
-        return (await client.read_gatt_char(handle)).decode("utf-8").split("\x00")[0]
+        response = (await client.read_gatt_char(handle))
+        return self._parse_string(response)
+
+    def _parse_string(self, response):
+        return response.decode("utf-8").split("\x00")[0]
 
     async def async_get_sensors(self):
         async with BleakClient(self._device) as client:
             raw_sensors = await client.read_gatt_char(35)
-            (
+            return self._parse_sensors_response(raw_sensors)
+
+    def _parse_sensors_response(self, raw_sensors):
+        (
                 humidity,
                 temperature,
                 light,
@@ -71,7 +78,7 @@ class PaxClient:
                 unknown,
                 unknown2,
             ) = struct.unpack("HHHHBBH", raw_sensors)
-            return PaxSensors(
+        return PaxSensors(
                 humidity,
                 temperature,
                 light,
