@@ -11,8 +11,6 @@ class CurrentTrigger(Enum):
     HUMIDITY = 3
     AUTOMATIC_VENTILATION = 7
 
-
-
 @dataclass
 class PaxDevice:
     manufacturer: str | None
@@ -36,12 +34,10 @@ class PaxSensors:
 
 
 class PaxClient:
-    device_info: PaxDevice | None = None
-
     def __init__(self, device):
         self._device = device
 
-    async def async_get_device_info(self):
+    async def async_get_device_info(self) -> PaxDevice:
         async with BleakClient(self._device) as client:
             serial_number = await self._read_string(client, 11)
             model_number = await self._read_string(client, 13)
@@ -65,7 +61,7 @@ class PaxClient:
     def _parse_string(self, response):
         return response.decode("utf-8").split("\x00")[0]
 
-    async def async_get_sensors(self):
+    async def async_get_sensors(self) -> PaxSensors:
         async with BleakClient(self._device) as client:
             raw_sensors = await client.read_gatt_char(35)
             return self._parse_sensors_response(raw_sensors)
@@ -91,3 +87,7 @@ class PaxClient:
                 unknown2,
                 raw_sensors.hex(),
             )
+    
+    async def get_pin(self) -> int:
+        async with BleakClient(self._device) as client:
+            return int.from_bytes(await client.read_gatt_char(24))

@@ -1,4 +1,16 @@
 {
+    "config": {
+        "step": {
+            "add_device": {
+                "title": "Add fan",
+                "description": "Add a Pax Levante fan to the system. Make sure that the fan is in pairing mode.",
+                "data": {
+                    "mac": "MAC Address (aa:bb:cc:dd:ee:ff)",
+                    "pin": "PIN Code"
+                }
+            }
+        }
+    },
     "entity": {
         "sensor": {
             "fan_speed": {
