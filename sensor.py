@@ -102,15 +102,16 @@ async def async_setup_entry(
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
     async with async_timeout.timeout(10):
-        device_info = await PaxClient(
+        async with PaxClient(
             bluetooth.async_ble_device_from_address(hass, address)
-        ).async_get_device_info()
+        ) as client:
+            device_info = await client.async_get_device_info()
 
-        async_add_entities(
-            PaxSensorEntity(coordinator, device_info, SENSOR_MAPPING[key])
-            for key in SENSOR_MAPPING
-        )
-        return True
+            async_add_entities(
+                PaxSensorEntity(coordinator, device_info, SENSOR_MAPPING[key])
+                for key in SENSOR_MAPPING
+            )
+            return True
 
 
 class PaxUpdateCoordinator(DataUpdateCoordinator):
@@ -130,9 +131,10 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
                 ble_device = bluetooth.async_ble_device_from_address(
                     self.hass, self.address
                 )
-                data = await PaxClient(ble_device).async_get_sensors()
-                _LOGGER.debug("Sensors: %s", data)
-                return data
+                async with PaxClient(ble_device) as client:
+                    data = await client.async_get_sensors()
+                    _LOGGER.debug("Sensors: %s", data)
+                    return data
         except Exception as err:
             _LOGGER.warn("Pax sensor update error: %s", err)
             raise UpdateFailed(f"Unable to fetch data: {err}") from err

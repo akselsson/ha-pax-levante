@@ -32,9 +32,10 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
                 ble_device = bluetooth.async_ble_device_from_address(
                     self.hass, self.address
                 )
-                data = await PaxClient(ble_device).async_get_sensors()
-                _LOGGER.debug("Sensors: %s", data)
-                return data
+                async with PaxClient(ble_device) as client:
+                    data = await PaxClient(ble_device).async_get_sensors()
+                    _LOGGER.debug("Sensors: %s", data)
+                    return data
         except Exception as err:
             _LOGGER.warn("Pax sensor update error: %s", err)
             raise UpdateFailed(f"Unable to fetch data: {err}") from err

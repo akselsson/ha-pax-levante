@@ -50,24 +50,24 @@ class PaxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_add_device(self, user_input=None) -> FlowResult:
         """Handle a flow initialized by the user."""
         _LOGGER.info(f"In async_step_add_device. Address: {self.discovery_info.address}")
-        client = PaxClient(self.discovery_info.address)
-        pin = await client.get_pin()
-
 
         if user_input is not None:
-            return self.async_create_entry(
-                title=self.discovery_info.name, 
-                data={
-                    CONF_ADDRESS: user_input["mac"],
-                    "pin": user_input["pin"]
-                    }
-                )
+                return self.async_create_entry(
+                    title=self.discovery_info.name, 
+                    data={
+                        CONF_ADDRESS: user_input["mac"],
+                        "pin": user_input["pin"]
+                        }
+                    )
+        
+        async with PaxClient(self.discovery_info.address) as client:
+            pin = await client.async_get_pin()
 
-        data_schema = vol.Schema({
-            vol.Required("mac", default=self.discovery_info.address): str,
-            vol.Optional("pin", default=pin): int,
-        })
-        errors = {}
-        return self.async_show_form(step_id="add_device", data_schema=data_schema, errors=errors)
+            data_schema = vol.Schema({
+                vol.Required("mac", default=self.discovery_info.address): str,
+                vol.Optional("pin", default=pin): int,
+            })
+            errors = {}
+            return self.async_show_form(step_id="add_device", data_schema=data_schema, errors=errors)
 
        
