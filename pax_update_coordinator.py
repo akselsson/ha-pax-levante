@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class PaxUpdateCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass, address):
+    def __init__(self, hass, address, device_info):
         super().__init__(
             hass,
             _LOGGER,
@@ -24,6 +24,7 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=60),
         )
         self.address = address
+        self.device_info = device_info
 
     async def _async_update_data(self):
         try:
@@ -33,7 +34,7 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
                     self.hass, self.address
                 )
                 async with PaxClient(ble_device) as client:
-                    data = await PaxClient(ble_device).async_get_sensors()
+                    data = await client.async_get_sensors()
                     _LOGGER.debug("Sensors: %s", data)
                     return data
         except Exception as err:

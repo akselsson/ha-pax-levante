@@ -92,59 +92,21 @@ async def async_setup_entry(
 ) -> bool:
 
     address = entry.unique_id
+    coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    _LOGGER.debug("In setup sensor: %s, Address: %s", entry, address)
-
-    coordinator = PaxUpdateCoordinator(hass, address)
-
-    await coordinator.async_config_entry_first_refresh()
-
-    hass.data[DOMAIN][entry.entry_id] = coordinator
-
-    async with async_timeout.timeout(10):
-        async with PaxClient(
-            bluetooth.async_ble_device_from_address(hass, address)
-        ) as client:
-            device_info = await client.async_get_device_info()
-
-            async_add_entities(
-                PaxSensorEntity(coordinator, device_info, SENSOR_MAPPING[key])
-                for key in SENSOR_MAPPING
-            )
-            return True
-
-
-class PaxUpdateCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass, address):
-        super().__init__(
-            hass,
-            _LOGGER,
-            name=DOMAIN,
-            update_interval=timedelta(seconds=60),
-        )
-        self.address = address
-
-    async def _async_update_data(self):
-        try:
-            async with async_timeout.timeout(10):
-                _LOGGER.debug("Updating data for %s", self.address)
-                ble_device = bluetooth.async_ble_device_from_address(
-                    self.hass, self.address
-                )
-                async with PaxClient(ble_device) as client:
-                    data = await client.async_get_sensors()
-                    _LOGGER.debug("Sensors: %s", data)
-                    return data
-        except Exception as err:
-            _LOGGER.warn("Pax sensor update error: %s", err)
-            raise UpdateFailed(f"Unable to fetch data: {err}") from err
+    _LOGGER.debug("In setup sensor: %s, Address: %s, Coordinator: %s", entry, address, coordinator)
+ 
+    async_add_entities(
+        PaxSensorEntity(coordinator, SENSOR_MAPPING[key])
+        for key in SENSOR_MAPPING
+    )
+    return True
 
 
 class PaxSensorEntity(CoordinatorEntity, SensorEntity):
     def __init__(
         self,
         coordinator: DataUpdateCoordinator,
-        device_info: DeviceInfo,
         entity_description: SensorEntityDescription,
     ):
         super().__init__(coordinator)
@@ -153,6 +115,8 @@ class PaxSensorEntity(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = (
             f"{format_mac(coordinator.address)}_{entity_description.key}"
         )
+
+        device_info = coordinator.device_info
 
         self._attr_has_entity_name = True
         self._attr_device_info = DeviceInfo(

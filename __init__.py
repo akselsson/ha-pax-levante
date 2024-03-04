@@ -1,6 +1,7 @@
 """The Pax Levante fan integration."""
 
 from __future__ import annotations
+import async_timeout
 
 from homeassistant.components import bluetooth
 from homeassistant.core import HomeAssistant
@@ -9,6 +10,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.exceptions import ConfigEntryNotReady
 
 import logging
+from .pax_client import PaxClient
+
+from .pax_update_coordinator import PaxUpdateCoordinator
 
 from .const import DOMAIN
 
@@ -29,7 +33,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady(f"Could not find Pax device with address {address}")
 
     _LOGGER.debug("Found device: %s", ble_device)
+    
+    async with async_timeout.timeout(10):
+        async with PaxClient(ble_device) as client:
+            device_info = await client.async_get_device_info()
 
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+            coordinator = PaxUpdateCoordinator(hass, address, device_info)
+            await coordinator.async_config_entry_first_refresh()
+            hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    return True
+            await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+            return True
