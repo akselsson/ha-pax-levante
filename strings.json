@@ -42,6 +42,11 @@
             "fanspeed_target_base": {
                 "name": "Fan speed target base"
             }
+        },
+        "switch": {
+            "boost": {
+                "name": "Boost"
+            }
         }
     }
 }

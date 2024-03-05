@@ -67,3 +67,16 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
                 self.fan_speed_targets = targets
                 self.async_set_updated_data(self.sensors)
                 return self.sensors
+
+    async def async_set_boost(self, value):
+        if self.pin == 0:
+            raise UpdateFailed(f"Pin not set, unable to update fan speed targets")
+        async with async_timeout.timeout(10):
+            _LOGGER.debug("Setting boost: %s", value)
+            async with PaxClient(self.address) as client:
+                if not await client.async_set_pin(self.pin):
+                    raise UpdateFailed(f"Unable to set pin.")
+                await client.async_set_boost(value)
+                self.sensors = await client.async_get_sensors()
+                self.async_set_updated_data(self.sensors)
+                return self.sensors
