@@ -22,7 +22,7 @@ from homeassistant.helpers.device_registry import (
 )
 
 
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -31,6 +31,8 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 
+from homeassistant.components.number import NumberEntityDescription
+
 # import SensorEntityDescription
 from homeassistant.const import REVOLUTIONS_PER_MINUTE
 
@@ -38,8 +40,8 @@ from homeassistant.components.number import NumberEntity
 from homeassistant.helpers.entity import EntityCategory
 
 
-
 from .pax_client import PaxClient, CurrentTrigger
+from .pax_update_coordinator import PaxUpdateCoordinator
 
 import logging
 import async_timeout
@@ -49,39 +51,36 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-OptionsTuple = namedtuple('options', ['min_value', 'max_value', 'step'])
-OPTIONS = {}
-OPTIONS["fanspeed"] = OptionsTuple(950, 2400, 25)
 
-PaxEntity = namedtuple('PaxEntity', ['key', 'entityName', 'units', 'deviceClass', 'category', 'icon', 'options'])
+@dataclass(kw_only=True)
+class PaxFanSpeedEntityDescription(NumberEntityDescription):
+    propertyKey: str
+
+    has_entity_name: bool = True
+    icon: str = "mdi:engine"
+    mode: str = "auto"
+    native_min_value: int = 950
+    native_max_value: int = 2400
+    native_step: int = 25
+    native_unit_of_measurement: str = REVOLUTIONS_PER_MINUTE
+
+
 ENTITIES = [
-    PaxEntity(
-        "fanspeed_humidity",
-        "Fanspeed Humidity",
-        REVOLUTIONS_PER_MINUTE,
-        None,
-        EntityCategory.CONFIG,
-        "mdi:engine",
-        OPTIONS["fanspeed"],
+    PaxFanSpeedEntityDescription(
+        key="fanspeed_target_humidity",
+        translation_key="fanspeed_target_humidity",
+        propertyKey="humidity",
     ),
-    PaxEntity(
-        "fanspeed_light",
-        "Fanspeed Light",
-        REVOLUTIONS_PER_MINUTE,
-        None,
-        EntityCategory.CONFIG,
-        "mdi:engine",
-        OPTIONS["fanspeed"],
+    PaxFanSpeedEntityDescription(
+        key="fanspeed_target_light",
+        translation_key="fanspeed_target_light",
+        propertyKey="light",
     ),
-    PaxEntity(
-        "fanspeed_trickle",
-        "Fanspeed Trickle",
-        REVOLUTIONS_PER_MINUTE,
-        None,
-        EntityCategory.CONFIG,
-        "mdi:engine",
-        OPTIONS["fanspeed"],
-    )
+    PaxFanSpeedEntityDescription(
+        key="fanspeed_target_base",
+        translation_key="fanspeed_target_base",
+        propertyKey="base",
+    ),
 ]
 
 
@@ -92,22 +91,23 @@ async def async_setup_entry(
     address = entry.unique_id
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    _LOGGER.debug("In setup sensor: %s, Address: %s, Coordinator: %s", entry, address, coordinator)
- 
-    async_add_entities(
-        PaxNumberEntity(coordinator, entity)
-        for entity in ENTITIES
+    _LOGGER.debug(
+        "In setup number: %s, Address: %s, Coordinator: %s", entry, address, coordinator
     )
+
+    async_add_entities(PaxFanSpeedEntity(coordinator, entity) for entity in ENTITIES)
     return True
 
 
-class PaxNumberEntity(CoordinatorEntity, NumberEntity):
+class PaxFanSpeedEntity(CoordinatorEntity, NumberEntity):
     def __init__(
         self,
-        coordinator: DataUpdateCoordinator,
-        entity_description: PaxEntity,
+        coordinator: PaxUpdateCoordinator,
+        entity_description: PaxFanSpeedEntityDescription,
     ):
         super().__init__(coordinator)
+
+        _LOGGER.info(f"Creating PaxFanSpeedEntity: {entity_description}")
 
         self.entity_description = entity_description
         self._attr_unique_id = (
@@ -116,7 +116,6 @@ class PaxNumberEntity(CoordinatorEntity, NumberEntity):
 
         device_info = coordinator.device_info
 
-        self._attr_has_entity_name = True
         self._attr_device_info = DeviceInfo(
             connections={(CONNECTION_BLUETOOTH, coordinator.address)},
             manufacturer=device_info.manufacturer,
@@ -126,32 +125,23 @@ class PaxNumberEntity(CoordinatorEntity, NumberEntity):
             hw_version=device_info.hw_version,
         )
 
-        """Number Entity properties"""
-        self._attr_device_class = entity_description.deviceClass
-        self._attr_mode = "box"
-        self._attr_native_min_value = entity_description.options.min_value
-        self._attr_native_max_value = entity_description.options.max_value
-        self._attr_native_step = entity_description.options.step
-        self._attr_native_unit_of_measurement = entity_description.units
-
     @property
     def native_value(self) -> float | None:
         """Return number value."""
         try:
-            return int(self.coordinator.get_data(self._key))
-        except:
+            return getattr(
+                self.coordinator.fan_speed_targets, self.entity_description.propertyKey
+            )
+        except Exception as e:
+            _LOGGER.error(
+                f"Error getting native value for {self.entity_description.propertyKey}: {e}",
+                exc_info=True,
+            )
             return None
 
     async def async_set_native_value(self, value):
-        """Save old value"""
-        old_value = self.coordinator.get_data(self._key)
-
-        """ Write new value to our storage """
-        self.coordinator.set_data(self._key, int(value))
-
-        """ Write value to device """
-        if not await self.coordinator.write_data(self._key):
-            """Restore value"""
-            self.coordinator.set_data(self._key, old_value)
+        await self.coordinator.async_set_fan_speed_target(
+            self.entity_description.propertyKey, int(value)
+        )
 
         self.async_schedule_update_ha_state(force_refresh=False)

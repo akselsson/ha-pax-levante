@@ -139,6 +139,14 @@ class PaxClient:
         response = await self._client.read_gatt_char(FAN_SPEED_TARGETS_HANDLE)
         return FanSpeedTarget(*struct.unpack("<HHH", response))
 
+    async def async_set_fan_speed_targets(self, targets: FanSpeedTarget) -> bool:
+        return await self._client.write_gatt_char(
+            FAN_SPEED_TARGETS_HANDLE,
+            bytearray(
+                struct.pack("<HHH", targets.humidity, targets.light, targets.base)
+            ),
+        )
+
     async def async_get_fan_sensitivity(self) -> FanSensitivitySetting:
         response = await self._client.read_gatt_char(FAN_SENSITIVITY_HANDLE)
         (

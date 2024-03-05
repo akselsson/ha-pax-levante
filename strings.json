@@ -31,6 +31,17 @@
             "boost": {
                 "name": "Boost"
             }
+        },
+        "number": {
+            "fanspeed_target_humidity": {
+                "name": "Fan speed target humidity"
+            },
+            "fanspeed_target_light": {
+                "name": "Fan speed target light"
+            },
+            "fanspeed_target_base": {
+                "name": "Fan speed target base"
+            }
         }
     }
 }

@@ -18,7 +18,7 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[str] = ["sensor"]
+PLATFORMS: list[str] = ["sensor", "number"]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -33,12 +33,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady(f"Could not find Pax device with address {address}")
 
     _LOGGER.debug("Found device: %s", ble_device)
-    
+
     async with async_timeout.timeout(10):
         async with PaxClient(ble_device) as client:
             device_info = await client.async_get_device_info()
 
-            coordinator = PaxUpdateCoordinator(hass, address, device_info)
+            coordinator = PaxUpdateCoordinator(
+                hass, address, device_info, entry.data["pin"]
+            )
             await coordinator.async_config_entry_first_refresh()
             hass.data[DOMAIN][entry.entry_id] = coordinator
 
