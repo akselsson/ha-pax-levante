@@ -13,6 +13,9 @@ DEVICE_NAME_HANDLE = 28
 SENSORS_HANDLE = 35
 PIN_READ_WRITE_HANDLE = 24
 PIN_CHECK_HANDLE = 26
+FAN_SPEED_TARGETS_HANDLE = 42
+FAN_SENSITIVITY_HANDLE = 44
+BOOST_HANDLE = 50
 
 # Constants for Sensor Data Parsing
 BOOST_BIT_POSITION = 4  # The position of the boost flag in the current_trigger byte
@@ -24,6 +27,33 @@ class CurrentTrigger(Enum):
     LIGHT = 2
     HUMIDITY = 3
     AUTOMATIC_VENTILATION = 7
+
+
+@dataclass
+class FanSpeedTarget:
+    humidity: int
+    light: int
+    base: int
+
+
+class FanSensitivity(Enum):
+    DISABLED = 0
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+
+
+@dataclass
+class FanSensitivitySetting:
+    humidity: FanSensitivity
+    light: FanSensitivity
+
+
+@dataclass
+class Boost:
+    active: bool
+    fan_speed_target: int
+    timeleft_seconds: int
 
 
 @dataclass
@@ -105,6 +135,42 @@ class PaxClient:
             == 1
         )
 
+    async def async_get_fan_speed_targets(self) -> FanSpeedTarget:
+        response = await self._client.read_gatt_char(FAN_SPEED_TARGETS_HANDLE)
+        return FanSpeedTarget(*struct.unpack("<HHH", response))
+
+    async def async_get_fan_sensitivity(self) -> FanSensitivitySetting:
+        response = await self._client.read_gatt_char(FAN_SENSITIVITY_HANDLE)
+        (
+            humidity_active,
+            humidity_sensitivity,
+            prescense_active,
+            prescense_sensitivity,
+        ) = struct.unpack("<BBBB", response)
+        return FanSensitivitySetting(
+            0 if humidity_active == 0 else humidity_sensitivity,
+            0 if prescense_active == 0 else prescense_sensitivity,
+        )
+
+    async def async_get_boost(self) -> bool:
+        response = await self._client.read_gatt_char(BOOST_HANDLE)
+        return Boost(*struct.unpack("<BHH", response))
+
+    async def async_set_boost(
+        self,
+        active: bool,
+        fan_speed_target: int | None = None,
+        timeleft_seconds: int | None = None,
+    ) -> bool:
+        return await self._client.write_gatt_char(
+            BOOST_HANDLE,
+            bytearray(
+                struct.pack(
+                    "<BHH", active, fan_speed_target or 2400, timeleft_seconds or 900
+                )
+            ),
+        )
+
     async def _read_string(self, client, handle) -> str:
         response = await client.read_gatt_char(handle)
         return self._parse_string(response)
@@ -123,7 +189,7 @@ class PaxClient:
             current_trigger,
             unknown,
             unknown2,
-        ) = struct.unpack("HHHHBBH", raw_sensors)
+        ) = struct.unpack("<HHHHBBH", raw_sensors)
         return PaxSensors(
             humidity,
             temperature,
