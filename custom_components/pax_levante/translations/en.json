@@ -34,13 +34,13 @@
         },
         "number": {
             "fanspeed_target_humidity": {
-                "name": "Fan speed target humidity"
+                "name": "Humidity fan speed target"
             },
             "fanspeed_target_light": {
-                "name": "Fan speed target light"
+                "name": "Light fan speed target"
             },
             "fanspeed_target_base": {
-                "name": "Fan speed target base"
+                "name": "Base fan speed target"
             }
         },
         "switch": {

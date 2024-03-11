@@ -95,15 +95,13 @@ class PaxBoostEntity(CoordinatorEntity, SwitchEntity):
             f"{format_mac(coordinator.address)}_{entity_description.key}"
         )
 
-        device_info = coordinator.device_info
-
         self._attr_device_info = DeviceInfo(
             connections={(CONNECTION_BLUETOOTH, coordinator.address)},
-            manufacturer=device_info.manufacturer,
-            model=f"{device_info.name} {device_info.model_number}",
-            name=device_info.name,
-            sw_version=device_info.sw_version,
-            hw_version=device_info.hw_version,
+            manufacturer=coordinator.device_info.manufacturer,
+            model=f"{coordinator.device_info.name} {coordinator.device_info.model_number}",
+            name=coordinator.device_info.name,
+            sw_version=coordinator.device_info.sw_version,
+            hw_version=coordinator.device_info.hw_version,
         )
 
     @property
