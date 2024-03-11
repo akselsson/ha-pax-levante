@@ -76,7 +76,7 @@ SENSOR_MAPPING: dict[str, SensorEntityDescription] = {
         key="current_trigger",
         translation_key="current_trigger",
         device_class=SensorDeviceClass.ENUM,
-        options=[CurrentTrigger.BASE, CurrentTrigger.LIGHT, CurrentTrigger.HUMIDITY],
+        options=list(CurrentTrigger),
     ),
     "boost": SensorEntityDescription(
         key="boost",
@@ -94,11 +94,12 @@ async def async_setup_entry(
     address = entry.unique_id
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    _LOGGER.debug("In setup sensor: %s, Address: %s, Coordinator: %s", entry, address, coordinator)
- 
+    _LOGGER.debug(
+        "In setup sensor: %s, Address: %s, Coordinator: %s", entry, address, coordinator
+    )
+
     async_add_entities(
-        PaxSensorEntity(coordinator, SENSOR_MAPPING[key])
-        for key in SENSOR_MAPPING
+        PaxSensorEntity(coordinator, SENSOR_MAPPING[key]) for key in SENSOR_MAPPING
     )
     return True
 

@@ -27,6 +27,7 @@ class CurrentTrigger(Enum):
     LIGHT = 2
     HUMIDITY = 3
     AUTOMATIC_VENTILATION = 7
+    BOOST = 17
 
 
 @dataclass
@@ -74,7 +75,6 @@ class PaxSensors:
     current_trigger: CurrentTrigger
     boost: bool
     unknown: int
-    unknown2: int
     raw: str
 
 
@@ -174,7 +174,10 @@ class PaxClient:
             BOOST_HANDLE,
             bytearray(
                 struct.pack(
-                    "<BHH", active, fan_speed_target or 2400, timeleft_seconds or 900
+                    "<BHH",
+                    active,
+                    fan_speed_target or (2400 if active else 0),
+                    timeleft_seconds or (900 if active else 0),
                 )
             ),
         )
@@ -196,16 +199,18 @@ class PaxClient:
             fan_speed,
             current_trigger,
             unknown,
-            unknown2,
-        ) = struct.unpack("<HHHHBBH", raw_sensors)
+        ) = struct.unpack("<HHHHHH", raw_sensors)
         return PaxSensors(
             humidity,
             temperature,
             light,
             fan_speed,
-            CurrentTrigger(current_trigger & TRIGGER_VALUE_MASK),
+            (
+                CurrentTrigger.BOOST
+                if current_trigger >> BOOST_BIT_POSITION == 1
+                else CurrentTrigger(current_trigger & TRIGGER_VALUE_MASK)
+            ),
             current_trigger >> BOOST_BIT_POSITION == 1,
             unknown,
-            unknown2,
             raw_sensors.hex(),
         )
