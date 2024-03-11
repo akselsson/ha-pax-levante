@@ -11,13 +11,13 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .const import DOMAIN
-from .pax_client import PaxClient, FanSpeedTarget, PaxSensors
+from .pax_client import PaxClient, FanSpeedTarget, PaxSensors, PaxDevice
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class PaxUpdateCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass, address, device_info, pin):
+    def __init__(self, hass, address, pin):
         super().__init__(
             hass,
             _LOGGER,
@@ -25,7 +25,7 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=60),
         )
         self.address = address
-        self.device_info = device_info
+        self.device_info: PaxDevice | None = None
         self.sensors: PaxSensors | None = None
         self.fan_speed_targets: FanSpeedTarget | None = None
         self.pin = pin
@@ -35,6 +35,9 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
             async with async_timeout.timeout(10):
                 _LOGGER.debug("Updating data for %s", self.address)
                 async with PaxClient(self.address) as client:
+                    if self.device_info is None:
+                        self.device_info = await client.async_get_device_info()
+
                     self.sensors = await client.async_get_sensors()
                     self.fan_speed_targets = await client.async_get_fan_speed_targets()
                     _LOGGER.debug(
