@@ -93,7 +93,6 @@ class PaxClient:
         self._client = None
 
     async def async_get_device_info(self) -> PaxDevice:
-        serial_number = await self._read_string(self._client, SERIAL_NUMBER_HANDLE)
         model_number = await self._read_string(self._client, MODEL_NUMBER_HANDLE)
         hardware_revision = await self._read_string(
             self._client, HARDWARE_REVISION_HANDLE
