@@ -1,22 +1,14 @@
+import logging
+
 from homeassistant import config_entries
-from .const import DOMAIN
-
-import voluptuous as vol
-from homeassistant import config_entries
-
-from homeassistant.components.bluetooth import (
-    BluetoothServiceInfo,
-)
-
+from homeassistant.components.bluetooth import BluetoothServiceInfo
 from homeassistant.config_entries import ConfigFlow
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.data_entry_flow import FlowResult
+import voluptuous as vol
 
-import logging
-
-from .pax_client import PaxClient, CurrentTrigger
-
-
+from .const import DOMAIN
+from .pax_client import CurrentTrigger, PaxClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,29 +37,28 @@ class PaxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return await self.async_step_add_device()
 
-        
-    
     async def async_step_add_device(self, user_input=None) -> FlowResult:
         """Handle a flow initialized by the user."""
-        _LOGGER.info(f"In async_step_add_device. Address: {self.discovery_info.address}")
+        _LOGGER.info(
+            f"In async_step_add_device. Address: {self.discovery_info.address}"
+        )
 
         if user_input is not None:
-                return self.async_create_entry(
-                    title=self.discovery_info.name, 
-                    data={
-                        CONF_ADDRESS: user_input["mac"],
-                        "pin": user_input["pin"]
-                        }
-                    )
-        
+            return self.async_create_entry(
+                title=self.discovery_info.name,
+                data={CONF_ADDRESS: user_input["mac"], "pin": user_input["pin"]},
+            )
+
         async with PaxClient(self.discovery_info.address) as client:
             pin = await client.async_get_pin()
 
-            data_schema = vol.Schema({
-                vol.Required("mac", default=self.discovery_info.address): str,
-                vol.Optional("pin", default=pin): int,
-            })
+            data_schema = vol.Schema(
+                {
+                    vol.Required("mac", default=self.discovery_info.address): str,
+                    vol.Optional("pin", default=pin): int,
+                }
+            )
             errors = {}
-            return self.async_show_form(step_id="add_device", data_schema=data_schema, errors=errors)
-
-       
+            return self.async_show_form(
+                step_id="add_device", data_schema=data_schema, errors=errors
+            )

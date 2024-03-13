@@ -2,48 +2,39 @@
 
 from __future__ import annotations
 
-from homeassistant.components import bluetooth
-from homeassistant.core import HomeAssistant
-from homeassistant.core import callback
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.update_coordinator import (
-    DataUpdateCoordinator,
-    UpdateFailed,
-    CoordinatorEntity,
-)
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
-from homeassistant.helpers.device_registry import (
-    CONNECTION_BLUETOOTH,
-    DeviceInfo,
-    format_mac,
-)
-
-
 from dataclasses import asdict
+from datetime import timedelta
+import logging
 
+# import SensorEntityDescription
+import async_timeout
+from homeassistant.components import bluetooth
+from homeassistant.components.fan import FanEntity
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
     SensorStateClass,
 )
-
-# import SensorEntityDescription
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import REVOLUTIONS_PER_MINUTE
-
-from homeassistant.components.fan import FanEntity
-from homeassistant.components.sensor import SensorEntity
-
-
-from .pax_client import PaxClient, CurrentTrigger
-
-import logging
-import async_timeout
-from datetime import timedelta
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.device_registry import (
+    CONNECTION_BLUETOOTH,
+    DeviceInfo,
+    format_mac,
+)
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import StateType
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity,
+    DataUpdateCoordinator,
+    UpdateFailed,
+)
 
 from .const import DOMAIN
+from .pax_client import CurrentTrigger, PaxClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -90,7 +81,6 @@ SENSOR_MAPPING: dict[str, SensorEntityDescription] = {
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> bool:
-
     address = entry.unique_id
     coordinator = hass.data[DOMAIN][entry.entry_id]
 

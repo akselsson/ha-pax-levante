@@ -1,1 +1,1 @@
-DOMAIN="pax_levante"
+DOMAIN = "pax_levante"
