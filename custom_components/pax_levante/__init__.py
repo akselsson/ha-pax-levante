@@ -1,20 +1,19 @@
 """The Pax Levante fan integration."""
 
 from __future__ import annotations
-import async_timeout
-
-from homeassistant.components import bluetooth
-from homeassistant.core import HomeAssistant
-from homeassistant.core import callback
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.exceptions import ConfigEntryNotReady
 
 import logging
-from .pax_client import PaxClient
 
-from .pax_update_coordinator import PaxUpdateCoordinator
+import async_timeout
+from homeassistant.components import bluetooth
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_ADDRESS
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import DOMAIN
+from .pax_client import PaxClient
+from .pax_update_coordinator import PaxUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ PLATFORMS: list[str] = ["sensor", "number", "switch"]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
-    address = entry.unique_id
+    address = entry.data[CONF_ADDRESS]
 
     _LOGGER.debug("In setup Entry: %s, Address: %s", entry, address)
 
@@ -32,7 +31,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not ble_device:
         raise ConfigEntryNotReady(f"Could not find Pax device with address {address}")
 
-    _LOGGER.debug("Found device: %s", ble_device)
+    _LOGGER.info("Found device: %s", ble_device)
 
     coordinator = PaxUpdateCoordinator(hass, address, entry.data["pin"])
     await coordinator.async_config_entry_first_refresh()
