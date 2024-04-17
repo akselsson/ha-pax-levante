@@ -30,20 +30,22 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
             async with async_timeout.timeout(10):
                 _LOGGER.debug("Updating data for %s", self.address)
                 async with PaxClient(self.address) as client:
+                    _LOGGER.debug("Connected to device")
                     if self.device_info is None:
                         self.device_info = await client.async_get_device_info()
+                        _LOGGER.debug("Fetched device info: %s", self.device_info)
 
                     self.sensors = await client.async_get_sensors()
+                    _LOGGER.debug("Fetched sensors: %s", self.sensors)
                     self.fan_speed_targets = await client.async_get_fan_speed_targets()
                     _LOGGER.debug(
-                        "Sensors: %s, Fan speeds: %s",
-                        self.sensors,
-                        self.fan_speed_targets,
+                        "Fetched fan speed targets: %s", self.fan_speed_targets
                     )
-                    return self.sensors
         except Exception as err:
             _LOGGER.warn("Pax sensor update error: %s", err)
             raise UpdateFailed(f"Unable to fetch data: {err}") from err
+        _LOGGER.debug("Data updated")
+        return self.sensors
 
     async def async_set_fan_speed_target(self, key: str, value: int):
         if self.pin == 0:
