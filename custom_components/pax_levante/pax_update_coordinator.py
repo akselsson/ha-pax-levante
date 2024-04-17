@@ -1,17 +1,12 @@
 import copy
-import logging
-import async_timeout
 from datetime import timedelta
+import logging
 
-from homeassistant.components import bluetooth
-
-from homeassistant.helpers.update_coordinator import (
-    DataUpdateCoordinator,
-    UpdateFailed,
-)
+import async_timeout
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
-from .pax_client import PaxClient, FanSpeedTarget, PaxSensors, PaxDevice
+from .pax_client import FanSpeedTarget, PaxClient, PaxDevice, PaxSensors
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,7 +17,7 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=60),
+            update_interval=timedelta(seconds=65),
         )
         self.address = address
         self.device_info: PaxDevice | None = None
