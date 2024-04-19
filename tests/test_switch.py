@@ -1,6 +1,6 @@
 """Switch tests for the pax_levante integration."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
@@ -68,7 +68,7 @@ class MockClient:
         return self.fan_speed_targets
 
 
-async def test_switch(hass: HomeAssistant):
+async def test_switch(hass: HomeAssistant, enable_bluetooth: None):
 
     # mock bluetooth.async_ble_device_from_address
     ble_device = {"CONF_ADDRESS": "AA:BB:CC:DD:EE:FF"}
@@ -80,44 +80,36 @@ async def test_switch(hass: HomeAssistant):
             "custom_components.pax_levante.pax_update_coordinator.PaxClient",
             new=MockClient,
         ) as client:
-            with patch(
-                "homeassistant.components.bluetooth",
-            ) as bt:
-                bt.async_setup = AsyncMock()
-                bt.async_setup.return_value = True
 
-                bt.async_ble_device_from_address = AsyncMock()
-                bt.async_ble_device_from_address.return_value = ble_device
+            entry = MockConfigEntry(
+                domain=DOMAIN,
+                data={
+                    CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
+                    "pin": 1234,
+                },
+            )
+            entry.add_to_hass(hass)
 
-                entry = MockConfigEntry(
-                    domain=DOMAIN,
-                    data={
-                        CONF_ADDRESS: "AA:BB:CC:DD:EE:FF",
-                        "pin": 1234,
-                    },
-                )
-                entry.add_to_hass(hass)
+            await hass.config_entries.async_setup(entry.entry_id)
 
-                await hass.config_entries.async_setup(entry.entry_id)
+            state = hass.states.get("switch.pax_levante_boost")
+            assert state.state == "on"
 
-                state = hass.states.get("switch.pax_levante_boost")
-                assert state.state == "on"
+            client.sensors = PaxSensors(
+                humidity=0,
+                temperature=98,
+                light=560,
+                fan_speed=2390,
+                current_trigger=CurrentTrigger.AUTOMATIC_VENTILATION,
+                boost=False,
+                unknown=0,
+                raw="000062003002560917000000",
+            )
 
-                client.sensors = PaxSensors(
-                    humidity=0,
-                    temperature=98,
-                    light=560,
-                    fan_speed=2390,
-                    current_trigger=CurrentTrigger.AUTOMATIC_VENTILATION,
-                    boost=False,
-                    unknown=0,
-                    raw="000062003002560917000000",
-                )
+            await hass.helpers.entity_component.async_update_entity(
+                "switch.pax_levante_boost"
+            )
+            state = hass.states.get("switch.pax_levante_boost")
+            assert state.state == "off"
 
-                await hass.helpers.entity_component.async_update_entity(
-                    "switch.pax_levante_boost"
-                )
-                state = hass.states.get("switch.pax_levante_boost")
-                assert state.state == "off"
-
-                await hass.async_block_till_done()
+            await hass.async_block_till_done()
