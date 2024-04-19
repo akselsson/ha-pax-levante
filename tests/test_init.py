@@ -11,6 +11,6 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     yield
 
 
-async def test_async_setup(hass):
+async def test_async_setup(hass, enable_bluetooth):
     """Test the component gets setup."""
     assert await async_setup_component(hass, DOMAIN, {}) is True

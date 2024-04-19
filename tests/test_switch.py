@@ -1,6 +1,6 @@
 """Switch tests for the pax_levante integration."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
@@ -68,7 +68,7 @@ class MockClient:
         return self.fan_speed_targets
 
 
-async def test_switch(hass: HomeAssistant):
+async def test_switch(hass: HomeAssistant, enable_bluetooth: None):
 
     # mock bluetooth.async_ble_device_from_address
     ble_device = {"CONF_ADDRESS": "AA:BB:CC:DD:EE:FF"}
