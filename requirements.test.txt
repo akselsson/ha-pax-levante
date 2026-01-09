@@ -1,5 +1,6 @@
 -r requirements.txt
 pyserial==3.5
 pytest
-pytest-homeassistant-custom-component==0.13.108
+pytest-asyncio
+pytest-homeassistant-custom-component==0.13.109
 pyudev==0.24.1
