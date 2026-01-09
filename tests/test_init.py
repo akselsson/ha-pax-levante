@@ -7,6 +7,11 @@ from custom_components.pax_levante.const import DOMAIN
 
 
 @pytest.fixture(autouse=True)
+def expected_lingering_timers() -> bool:
+    return True
+
+
+@pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations):
     yield
 
