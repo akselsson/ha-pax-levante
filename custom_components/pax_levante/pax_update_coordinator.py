@@ -25,6 +25,7 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
         self.sensors: PaxSensors | None = None
         self.fan_speed_targets: FanSpeedTarget | None = None
         self.pin = pin
+        self._last_update_failed = False
 
     async def _async_update_data(self):
         try:
@@ -37,7 +38,14 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
                     raise UpdateFailed(
                         f"Could not find device {self.address}"
                     )
-                async with PaxClient(ble_device) as client:
+                use_cache = not self._last_update_failed
+                if not use_cache:
+                    _LOGGER.debug(
+                        "Previous update failed, disabling services cache"
+                    )
+                async with PaxClient(
+                    ble_device, use_services_cache=use_cache
+                ) as client:
                     _LOGGER.debug("Connected to device")
                     if self.device_info is None:
                         await client.async_log_services()
@@ -50,7 +58,9 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
                     _LOGGER.debug(
                         "Fetched fan speed targets: %s", self.fan_speed_targets
                     )
+                self._last_update_failed = False
         except Exception as err:
+            self._last_update_failed = True
             _LOGGER.warn("Pax sensor update error: %s", err)
             raise UpdateFailed(f"Unable to fetch data: {err}") from err
         _LOGGER.debug("Data updated")
@@ -73,7 +83,9 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
             )
             if not ble_device:
                 raise UpdateFailed(f"Could not find device {self.address}")
-            async with PaxClient(ble_device) as client:
+            async with PaxClient(
+                ble_device, use_services_cache=not self._last_update_failed
+            ) as client:
                 if not await client.async_set_pin(self.pin):
                     raise UpdateFailed(f"Unable to set pin.")
                 await client.async_set_fan_speed_targets(targets)
@@ -92,7 +104,9 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
             )
             if not ble_device:
                 raise UpdateFailed(f"Could not find device {self.address}")
-            async with PaxClient(ble_device) as client:
+            async with PaxClient(
+                ble_device, use_services_cache=not self._last_update_failed
+            ) as client:
                 if not await client.async_set_pin(self.pin):
                     raise UpdateFailed(f"Unable to set pin.")
                 await client.async_set_boost(value)

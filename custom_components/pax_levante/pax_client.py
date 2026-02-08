@@ -85,13 +85,17 @@ class PaxSensors:
 
 
 class PaxClient:
-    def __init__(self, device):
+    def __init__(self, device, use_services_cache=True):
         self._device = device
         self._client = None
+        self._use_services_cache = use_services_cache
 
     async def __aenter__(self):
         self._client = await establish_connection(
-            BleakClient, self._device, self._device.name or "Pax Levante"
+            BleakClient,
+            self._device,
+            self._device.name or "Pax Levante",
+            use_services_cache=self._use_services_cache,
         )
         return self
 
