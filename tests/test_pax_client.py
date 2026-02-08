@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock
 import pytest
 
 from custom_components.pax_levante.pax_client import (
-    FAN_SPEED_TARGETS_HANDLE,
-    PIN_CHECK_HANDLE,
+    FAN_SPEED_TARGETS_UUID,
+    PIN_CHECK_UUID,
     CurrentTrigger,
     FanSpeedTarget,
     PaxClient,
@@ -65,7 +65,7 @@ async def test_async_check_pin(pax_client):
 
     assert await pax_client.async_check_pin()
 
-    pax_client._client.read_gatt_char.assert_called_once_with(PIN_CHECK_HANDLE)
+    pax_client._client.read_gatt_char.assert_called_once_with(PIN_CHECK_UUID)
 
 
 async def test_async_get_fan_speed_targets(pax_client):
@@ -75,4 +75,4 @@ async def test_async_get_fan_speed_targets(pax_client):
         2400, 1740, 950
     )
 
-    pax_client._client.read_gatt_char.assert_called_once_with(FAN_SPEED_TARGETS_HANDLE)
+    pax_client._client.read_gatt_char.assert_called_once_with(FAN_SPEED_TARGETS_UUID)

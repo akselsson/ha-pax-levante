@@ -40,6 +40,7 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
                 async with PaxClient(ble_device) as client:
                     _LOGGER.debug("Connected to device")
                     if self.device_info is None:
+                        await client.async_log_services()
                         self.device_info = await client.async_get_device_info()
                         _LOGGER.debug("Fetched device info: %s", self.device_info)
 
