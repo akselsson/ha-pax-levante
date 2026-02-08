@@ -27,9 +27,8 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 
 
 class MockClient:
-    def __init__(self, bleDevice):
+    def __init__(self, bleDevice, use_services_cache=True):
         self.bleDevice = bleDevice
-        pass
 
     device = PaxDevice(
         manufacturer="Pax",
