@@ -71,7 +71,8 @@ class MockClient:
 async def test_switch(hass: HomeAssistant, enable_bluetooth: None):
 
     # mock bluetooth.async_ble_device_from_address
-    ble_device = {"CONF_ADDRESS": "AA:BB:CC:DD:EE:FF"}
+    ble_device = MagicMock()
+    ble_device.name = "Pax Levante"
     with patch(
         "homeassistant.components.bluetooth.async_ble_device_from_address",
         return_value=ble_device,

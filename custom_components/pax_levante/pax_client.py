@@ -1,4 +1,5 @@
 from bleak import BleakClient, BleakError
+from bleak_retry_connector import establish_connection
 from dataclasses import dataclass
 import struct
 from enum import Enum
@@ -84,8 +85,9 @@ class PaxClient:
         self._client = None
 
     async def __aenter__(self):
-        self._client = BleakClient(self._device)
-        await self._client.connect()
+        self._client = await establish_connection(
+            BleakClient, self._device, self._device.name or "Pax Levante"
+        )
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):

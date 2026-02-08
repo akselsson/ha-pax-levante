@@ -49,7 +49,7 @@ class PaxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data={CONF_ADDRESS: user_input["mac"], "pin": user_input["pin"]},
             )
 
-        async with PaxClient(self.discovery_info.address) as client:
+        async with PaxClient(self.discovery_info.device) as client:
             pin = await client.async_get_pin()
 
             data_schema = vol.Schema(

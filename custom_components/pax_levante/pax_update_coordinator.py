@@ -3,6 +3,7 @@ from datetime import timedelta
 import logging
 
 import async_timeout
+from homeassistant.components import bluetooth
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
@@ -29,7 +30,14 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
         try:
             async with async_timeout.timeout(10):
                 _LOGGER.debug("Updating data for %s", self.address)
-                async with PaxClient(self.address) as client:
+                ble_device = bluetooth.async_ble_device_from_address(
+                    self.hass, self.address
+                )
+                if not ble_device:
+                    raise UpdateFailed(
+                        f"Could not find device {self.address}"
+                    )
+                async with PaxClient(ble_device) as client:
                     _LOGGER.debug("Connected to device")
                     if self.device_info is None:
                         self.device_info = await client.async_get_device_info()
@@ -59,7 +67,12 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
         setattr(targets, key, value)
         async with async_timeout.timeout(10):
             _LOGGER.debug("Setting fan speed targets: %s", targets)
-            async with PaxClient(self.address) as client:
+            ble_device = bluetooth.async_ble_device_from_address(
+                self.hass, self.address
+            )
+            if not ble_device:
+                raise UpdateFailed(f"Could not find device {self.address}")
+            async with PaxClient(ble_device) as client:
                 if not await client.async_set_pin(self.pin):
                     raise UpdateFailed(f"Unable to set pin.")
                 await client.async_set_fan_speed_targets(targets)
@@ -73,7 +86,12 @@ class PaxUpdateCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Pin not set, unable to update fan speed targets")
         async with async_timeout.timeout(10):
             _LOGGER.debug("Setting boost: %s", value)
-            async with PaxClient(self.address) as client:
+            ble_device = bluetooth.async_ble_device_from_address(
+                self.hass, self.address
+            )
+            if not ble_device:
+                raise UpdateFailed(f"Could not find device {self.address}")
+            async with PaxClient(ble_device) as client:
                 if not await client.async_set_pin(self.pin):
                     raise UpdateFailed(f"Unable to set pin.")
                 await client.async_set_boost(value)
