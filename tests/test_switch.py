@@ -58,6 +58,9 @@ class MockClient:
     async def __aexit__(self, *args):
         pass
 
+    async def async_log_services(self):
+        pass
+
     async def async_get_device_info(self):
         return self.device
 
